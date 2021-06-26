@@ -22,9 +22,9 @@ Note: When I use KNN, naive bayes, and Descision tree algorithms, I need to conv
 ##### Classification
 |  | Positive | Negetive | Total |  
 |:---|:--------:|:------:|:--------:| 
-| Positive | TP | FN | 704 |
-| Negetive | FP | TN | 373 | 
-| Total | 694 | 383 | 1077 |
+| Positive | TP | FN | n1 |
+| Negetive | FP | TN | n2 | 
+| Total | m1 | m2 | N |
 - <img src="https://latex.codecogs.com/svg.image?Accuracy&space;=&space;\frac{TP&space;&plus;&space;TN}{TP&space;&plus;&space;TN&space;&plus;&space;FP&space;&plus;&space;FN}&space;" title="Accuracy = \frac{TP + TN}{TP + TN + FP + FN} " />
 - <img src="https://latex.codecogs.com/svg.image?Pos_Pred_Value&space;&space;=&space;Recall&space;=&space;\frac{TP}{TP&space;&plus;&space;FN}&space;" title="Pos_Pred_Value = Recall = \frac{TP}{TP + FN} " />
 - <img src="https://latex.codecogs.com/svg.image?Neg&space;Pred&space;Value&space;=&space;\frac{TN}{TN&space;&plus;&space;FP}" title="Neg Pred Value = \frac{TN}{TN + FP}" />
