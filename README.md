@@ -15,7 +15,7 @@
 Note: When I use KNN, naive bayes, and Descision tree algorithms, I need to convert the output data to binary form."factor(ifelse(df1$Arr_Delay >80 ,1 ,0))". Here number is 80 because it is between Q1 and Q3(49<= number <= 90)
 #### formula
 ##### Regression 
--<img src="https://latex.codecogs.com/svg.image?&space;Y_i=&space;\beta_0&space;&plus;&space;\beta_1x_{i1}&space;&plus;&space;\beta_2x_{i2}&space;&plus;&space;...&space;&plus;&space;\beta_px_{ip}&space;&plus;&space;\epsilon" title=" Y_i= \beta_0 + \beta_1x_{i1} + \beta_2x_{i2} + ... + \beta_px_{ip} + \epsilon" />
+- <img src="https://latex.codecogs.com/svg.image?&space;Y_i=&space;\beta_0&space;&plus;&space;\beta_1x_{i1}&space;&plus;&space;\beta_2x_{i2}&space;&plus;&space;...&space;&plus;&space;\beta_px_{ip}&space;&plus;&space;\epsilon" title=" Y_i= \beta_0 + \beta_1x_{i1} + \beta_2x_{i2} + ... + \beta_px_{ip} + \epsilon" />
 - (Lasso regression) Objective = RSS + α * (sum of absolute value of coefficients)  
 - <img src="https://latex.codecogs.com/svg.image?RMSE&space;=&space;\sqrt{\frac{\displaystyle\sum_{i=1}^n(Y_i&space;-&space;\hat{Y_i})^2}{n}}" title="RMSE = \sqrt{\frac{\displaystyle\sum_{i=1}^n(Y_i - \hat{Y_i})^2}{n}}" />
 - <img src="https://latex.codecogs.com/svg.image?R^2&space;=&space;Cor(Y_i&space;-&space;\hat{Y_i})^2" title="R^2 = Cor(Y_i - \hat{Y_i})^2" />
