@@ -19,7 +19,12 @@ Note: When I use KNN, naive bayes, and Descision tree algorithms, I need to conv
 - (Lasso regression) Objective = RSS + α * (sum of absolute value of coefficients)  
 - <img src="https://latex.codecogs.com/svg.image?RMSE&space;=&space;\sqrt{\frac{\displaystyle\sum_{i=1}^n(Y_i&space;-&space;\hat{Y_i})^2}{n}}" title="RMSE = \sqrt{\frac{\displaystyle\sum_{i=1}^n(Y_i - \hat{Y_i})^2}{n}}" />
 - <img src="https://latex.codecogs.com/svg.image?R^2&space;=&space;Cor(Y_i&space;-&space;\hat{Y_i})^2" title="R^2 = Cor(Y_i - \hat{Y_i})^2" />
-##### classification
+##### Classification
+|  | Positive | Negetive | Total |  
+|:---|:--------:|:------:|:--------:| 
+| Positive | TP | FN | 704 |
+| Negetive | FP | TN | 373 | 
+| Total | 694 | 383 | 1077 |
 - <img src="https://latex.codecogs.com/svg.image?Accuracy&space;=&space;\frac{TP&space;&plus;&space;TN}{TP&space;&plus;&space;TN&space;&plus;&space;FP&space;&plus;&space;FN}&space;" title="Accuracy = \frac{TP + TN}{TP + TN + FP + FN} " />
 - <img src="https://latex.codecogs.com/svg.image?Pos_Pred_Value&space;&space;=&space;Recall&space;=&space;\frac{TP}{TP&space;&plus;&space;FN}&space;" title="Pos_Pred_Value = Recall = \frac{TP}{TP + FN} " />
 - <img src="https://latex.codecogs.com/svg.image?Neg&space;Pred&space;Value&space;=&space;\frac{TN}{TN&space;&plus;&space;FP}" title="Neg Pred Value = \frac{TN}{TN + FP}" />
