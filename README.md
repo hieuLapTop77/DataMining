@@ -29,4 +29,4 @@ Note: When I use KNN, naive bayes, and Descision tree algorithms, I need to conv
 - $$P_0 = Accuracy $$
 - $$P_e = \displaystyle\sum_{i=1}^n(\frac{n_i}{N}* \frac{m_i}{N}) $$
 #### Good luck
-![equation](http://www.sciweavers.org/tex2img.php?eq=1%2Bsin%28mc%5E2%29&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=)
+<img src="https://latex.codecogs.com/svg.image?Accuracy&space;=&space;\frac{TP&space;&plus;&space;TN}{TP&space;&plus;&space;TN&space;&plus;&space;FP&space;&plus;&space;FN}&space;" title="Accuracy = \frac{TP + TN}{TP + TN + FP + FN} " />
