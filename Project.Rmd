@@ -1,0 +1,527 @@
+---
+title: "Project - Nhóm 10"
+author: "Phan Thành Đạt - Lê Chí Hiếu - Đỗ Đình Phùng - Nguyễn Anh Triều"
+date: "6/16/2021"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Tập dữ liệu flight_delay
+
+Tập dữ liệu `delay_flight` gồm các thuộc tính bên dưới (`	Arr_Delay` là thuộc tính ta muốn dự đoán) 
+
+sẽ được sử dụng cho bài lab này.
+
+| Variables | Meaning |  
+|:---|:--------|
+| Carrier | là mã của hãng máy bay vận chuyển. |
+| Airport_Distance | Khoảng cách giữa 2 sân bay. | 
+| Number_of_flights | Số hiệu của chuyến bay. |
+| Weather | Thời tiết ảnh hưởng đến thời gian của chuyến bay(tinh theo %).|
+| Support_Crew_Available | Số phi hành đoàn có trên một chuyến bay. |
+| Baggage_loading_time | thời gian xếp hành lý lên khoan.|
+| Late_Arrival_o | Thời gian trễ. |
+| Cleaning_o | Thời gian lau dọn trên máy bay trước khi bay.|
+| Fueling_o | Thời gian tiếp nhiên liệu cho máy bay trước khi bay. |
+| Security_o | Thời gian qua trạm kiểm soát an ninh trước khi lên may bay|
+| Arr_Delay |  Thời gian chuyến bay đến bị trễ |
+
+Tập dữ liệu muốn dự đoán thời gian mà một chuyến bay đến (từ sân bay này đến sân bay khác) có thời gian bị trễ là bao nhiêu.
+
+Giá trị đầu vào(input): "Carrier", "Airport_Distance", "Number_of_flights", "Weather", "Support_Crew_Available", "Baggage_loading_time","Late_Arrival_o", "Cleaning_o","Fueling_o", "Security_o"
+
+Giá trị cần dự đoán (Output): "Arr_Delay"
+
+Phương pháp đánh giá: cross validation
+
+Độ đo: confusion matrix
+
+Nhóm sử dụng thuật toán hồi quy tuyến tính, KNN, Navie bayes, Descision Tree 
+
+
+
+## Đọc và load tập dữ liệu flight_delay
+```{r}
+# load library
+library(caret)
+library(ggplot2)
+#load dataset
+df <- read.csv("flight_delay.csv", header = T)
+
+# show head 6 rows
+head(df)
+
+# show bottom 6 rows
+tail(df)
+
+# describe the structure of data
+str(df)
+
+#show the column name of the data
+names(df)
+
+```
+Xem thống kê
+
+```{r}
+# show summary
+summary(df)
+```
+
+
+
+```{r}
+# Vì hãng chuyến bay không phụ thuộc các biến nên ta có thể xóa 
+df1 <- df[-c(1)]
+
+#Kiểm tra mối quan hệ giữa các biến 
+cor(df1)
+
+library(caTools)
+set.seed(1000)
+# Tách dữ liệu với train data là 70% dataset
+sample <- sample.split(df$Arr_Delay,SplitRatio=0.70)
+
+train_data <- subset(df1,sample==TRUE)
+
+test_data <- subset(df1,sample==FALSE)
+```
+
+Hiển thị các hình để xem các mối quan hệ trong mô hình
+
+```{r}
+par(mfrow = c(2,2))
+
+# mô hình tương quan giữa  Arr_Delay vs Number_of_flight
+plot(df$Arr_Delay,df$Number_of_flights, xlab = "Arr_Delay", ylab = "Number_of_flight")
+
+# mô hình tương quan giữa  Arr_Delay vs Security_o
+plot(df$Arr_Delay,df$Security_o,  xlab = "Arr_Delay", ylab = "Security_o")
+
+# mô hình tương quan giữa  Arr_Delay vs Support_Crew_Available
+plot(df$Arr_Delay,df$Support_Crew_Available, xlab = "Arr_Delay", ylab = "Support_Crew_Available")
+
+# mô hình tương quan giữa  Arr_Delay vs Airport_Distance
+plot(df$Arr_Delay,df$Airport_Distance,  xlab = "Arr_Delay", ylab = "Airport_Distance")
+
+# nhận xét: mối tương quan giữa Arr_Delay vs Number_of_flight cho thấy cả hai biến đều tỉ lệ thuận 
+
+# Kiểm tra mối tương quan giữa 2 biến 
+testArr <- cor.test(df$Arr_Delay,df$Number_of_flights, method = "pearson" )
+testArr # quan sát kết quả cho thấy cor là 0.82 và p-value <2.2e-16 điều này nói lên giá trị p-value nhỏ hơn nhiều so với mức ý nghĩa 0.05. Do vậy hệ số tương quan trên là đáng kể
+```
+
+
+Chạy mô hình với các biến được bỏ ra 
+```{r}
+# Chạy với traindata
+model <- lm(formula = Arr_Delay ~.,data = train_data)
+summary(model)
+
+# Nhận xét ta thấy các p-value của cleaning_o, Fueling_o, Security_o không nhỏ hơn 0.05. Do vậy các biến này không có ý nghĩa trong mô hình.
+# chạy với traindata
+model1 <- lm(formula = Arr_Delay ~ Airport_Distance+Number_of_flights
++Weather+Support_Crew_Available+Baggage_loading_time
++Late_Arrival_o, data= train_data)
+summary(model1)
+
+# Tính hệ số của phương tình dự đoán 
+
+intercept <- coef(summary(model1))["(Intercept)", "Estimate"]
+airport_Distance <- coef(summary(model1))["Airport_Distance", "Estimate"]
+Number_of_flights <- coef(summary(model1))["Number_of_flights", "Estimate"]
+Weather <- coef(summary(model1))["Weather", "Estimate"]
+Support_Crew_Available <- coef(summary(model1))["Support_Crew_Available", "Estimate"]
+Baggage_loading_time <- coef(summary(model1))["Baggage_loading_time", "Estimate"]
+Late_Arrival_o <- coef(summary(model1))["Late_Arrival_o", "Estimate"]
+
+y <-intercept +  airport_Distance*test_data$Airport_Distance + Number_of_flights*test_data$Number_of_flights + Weather*test_data$Weather +Support_Crew_Available*test_data$Support_Crew_Available + Baggage_loading_time*test_data$Baggage_loading_time + Late_Arrival_o*test_data$Late_Arrival_o 
+
+y
+
+```
+**Nhận Xét**
+ Nhận xét: Trong trường hợp nghiên cứu này, bình phương R là 82,09% chấp nhận tốt, có nghĩa là 82,09% chuyến bay Arr_Delay được dự đoán bởi độc lập các biến trong mô hình của chúng tôi như Airport_Distance, Weather, Number_of_flights, Support_Crew_Available, Baggage_loading_time và Late_Arrival_o.
+ 
+Lọc dữ liệu và test dữ liệu
+```{r}
+# Dự đoán trong tập dữ liệu test-data
+
+pred_test<- predict(model1,newdata = test_data, type = "response")
+
+pred_test1<- data.frame(pred_test)
+pred_test1
+
+#Vẽ mô hình với dữ liệu thực tế và dữ liệu train
+plot (test_data$Arr_Delay,col="red",type ="l",lty=1.8)
+lines(pred_test1,col="blue",type ="l",lty=1.4)
+
+test_data$error = test_data$Arr_Delay - pred_test
+head(test_data)
+
+#Tính rmse
+rmse = sqrt(mean(test_data$error^2))
+rmse
+
+#Tính Rsquared thông qua hàm cor. Hàm cor để tính hệ số tương quan giữa 2 biến.
+cor(test_data$Arr_Delay,pred_test)^2
+
+
+```
+**Công thức tính**
+
+Công thức hồi quy tuyến tính nhiều biến:
+
+$$Y_i= \beta_0 + \beta_1x_{i1} + \beta_2x_{i2} + ... + \beta_px_{ip} + \epsilon$$
+
+$$RMSE = \sqrt{\frac{\displaystyle\sum_{i=1}^n(Y_i - \hat{Y_i})^2}{n}}$$
+
+Công thức tính R-squared trong  Linear Regression:
+
+$$R^2 = Cor(Y_i - \hat{Y_i})^2$$
+**Tài liệu tham khảo**: https://quantifyinghealth.com/relationship-between-r-and-r-squared/
+
+## Xây dựng với phương pháp x-validation
+
+```{r}
+control = trainControl(method = "cv", number = 10) 
+fit = train(form = Arr_Delay ~ Airport_Distance+Number_of_flights
++Weather+Support_Crew_Available+Baggage_loading_time
++Late_Arrival_o, data=df, method ="lm", trControl = control)
+
+fit
+```
+
+**Nhận xét**
+Test với phương pháp cross validation thì cũng cho ra kết quả gần đúng.
+
+### Trên thuật toán Lasso Regression
+
+```{r}
+library(glmnet)
+
+library(class)
+library(caTools)
+library(caret)
+library(gmodels)
+set.seed(1000)
+
+df <- read.csv("flight_delay.csv", header = T)
+df1 <- df[-c(1)]
+
+data.d <- sample(1:nrow(df1),size=nrow(df1)*0.7,replace = FALSE) 
+ 
+traindata <- df1[data.d,] 
+testdata <- df1[-data.d,] 
+
+x <- data.matrix(traindata[,1:6])
+
+x_test <- data.matrix(testdata[,1:6])
+
+lambdas <- 10^seq(2, -6, by = -.1)
+
+cv_model <- cv.glmnet(x, traindata$Arr_Delay, alpha = 1, lambda = lambdas)
+
+best_lambda <- cv_model$lambda.min
+best_lambda
+plot(cv_model)
+```
+```{r}
+eval_results <- function(true, predicted, df) {
+  SSE <- sum((predicted - true)^2)
+  SST <- sum((true - mean(true))^2)
+  R_square <- 1 - SSE / SST
+  RMSE = sqrt(SSE/nrow(df))
+data.frame(RMSE = RMSE,Rsquare = R_square)
+}
+
+lasso_model <- glmnet(x, traindata$Arr_Delay, alpha = 1, lambda = best_lambda, standardize = TRUE)
+
+predictions_train <- predict(lasso_model, s = best_lambda, newx = x)
+eval_results(traindata$Arr_Delay, predictions_train, traindata)
+
+predictions_test <- predict(lasso_model, s = best_lambda, newx = x_test)
+
+eval_results(testdata$Arr_Delay, predictions_test, testdata)
+
+```
+
+**Công thức**
+
+$$\displaystyle\sum_{i=1}^n(Y_i - X_i\beta_i)^2 + \lambda\displaystyle\sum_{i=1}^n|\beta_i|=\displaystyle\sum_{i=1}^n(Y_i - \hat{Y_i})^2 + \lambda\displaystyle\sum_{i=1}^n|\beta_i| = SSE + \lambda\displaystyle\sum_{i=1}^n|\beta_i|$$
+
+
+### Trên thuật toán KNN (K Nearest Neighbors)
+
+```{r}
+library(class)
+library(caTools)
+library(caret)
+library(gmodels)
+set.seed(1000)
+
+df <- read.csv("flight_delay.csv", header = T)
+df1 <- df[-c(1)]
+
+# Loại bỏ biến Arr_delay vì biến này là để ta dự đoán
+df1$Arr_Delay <- factor(ifelse(df1$Arr_Delay >80 ,1 ,0))
+
+data.d <- sample(1:nrow(df1),size=nrow(df1)*0.7,replace = FALSE) 
+ 
+traindata_KNN <- df1[data.d,] 
+testdata_KNN <- df1[-data.d,] 
+
+
+ctrl <-trainControl(method ="cv", 
+                    number =10, 
+                    repeats=5)
+
+
+customGrid <-expand.grid(k=1:60)
+
+train(Arr_Delay~Airport_Distance+Number_of_flights
++Weather+Support_Crew_Available+Baggage_loading_time
++Late_Arrival_o, 
+      data=traindata_KNN,
+      method = "knn", 
+      trControl = ctrl, 
+      preProcess= c("center","scale"), 
+      tuneGrid = customGrid, 
+      metric="Accuracy") -> knnFit
+
+knnFit
+plot(knnFit, type="b",col = "dodgerblue", xlab="KNNFit",ylab="Accuracy level")
+
+```
+
+
+
+```{r}
+pred_test <-predict(knnFit, newdata = testdata_KNN)
+
+confusionMatrix(pred_test, testdata_KNN$Arr_Delay)
+
+
+cat("Accuracy = ",sum(testdata_KNN$Arr_Delay==pred_test)/(nrow(testdata_KNN)),"\n")
+
+cat("sensitivity = Precision =  ",sensitivity(pred_test,testdata_KNN$Arr_Delay),"\n")
+
+cat("specificity = ",specificity(pred_test,testdata_KNN$Arr_Delay), "\n")
+
+cat("posPredValue = recall = ",posPredValue(pred_test, testdata_KNN$Arr_Delay),"\n")
+
+cat("negPredValue = ",negPredValue(pred_test, testdata_KNN$Arr_Delay),"\n")
+
+cat("F_measure = ",2 * ((sensitivity(pred_test,testdata_KNN$Arr_Delay) *posPredValue(pred_test, testdata_KNN$Arr_Delay)) / (sensitivity(pred_test,testdata_KNN$Arr_Delay) + posPredValue(pred_test, testdata_KNN$Arr_Delay))),"\n")
+```
+
+**Nhận xét**
+
+
+- Độ chính xác của thuật toán KNN cho tập dữ liệu là 85.06% . 
+          
+- $$Accuracy = \frac{TP + TN}{TP + TN + FP + FN} = \frac{650 + 2967}{650 + 267 + 44 + 117} =  0.8506  $$
+- $$Pos_Pred_Value = = Recall= \frac{TP}{TP + FN} = \frac{650}{650 + 117} = 0.8475  $$
+- $$Neg Pred Value = \frac{TN}{TN + FP} = \frac{267}{267 + 44} = 0.8585   $$
+- $$Sensitivity = Precision = \frac{TP}{TP + FP} = \frac{650}{650 + 44} = 0.9366  $$
+- $$Specificity = \frac{TN}{TN + FN} = \frac{267}{267 + 117} = 0.6953 $$
+- $$Kappa = \frac{P_0 - P_e}{1-P_e}$$
+**Bảng giá trị**
+
+|  | Positive | Negetive | Total |  
+|:---|:--------:|:------:|:--------:| 
+| Positive | 650 | 117 | 767 |
+| Negetive | 44 | 267 | 311 | 
+| Total | 694 | 384 | 1078 |
+** **
+
+
+- $$P_0 = Accuracy =  0.8506  $$
+- $$P_e = \displaystyle\sum_{i=1}^n(\frac{n_i}{N}* \frac{m_i}{N}) = (\frac{767}{1078}* \frac{694}{1078}) + (\frac{311}{1078}* \frac{384}{1078}) = 0.55997$$
+- $$Kappa = \frac{P_0 - P_e}{1-P_e} = \frac{ 0.8506  - 0.55997}{1-0.55997} = 0.66$$
+
+- Hệ số Kappa là hệ số được sử dụng để đánh giá hiệu suất của một mô hình phân loại.<br>
+  Kappa <0: Không đồng ý. <br>
+  Kappa từ 0,00 đến 0,20: Thoả thuận nhẹ. <br>
+  Kappa từ 0,21 đến 0,40: Thỏa thuận công bằng. <br>
+  Kappa từ 0,41 đến 0,60: Thỏa thuận vừa phải. <br>
+  Kappa giữa 0,61 và 0,80: Thỏa thuận đáng kể. <br>
+  Kappa giữa 0,81 và 1,00: Thỏa thuận gần như hoàn hảo.<br>
+
+### Thuật toán Navie Bayes
+
+```{r}
+library(class)
+library(caTools)
+library(e1071)
+library(caret)
+set.seed(1000)
+
+df <- read.csv("flight_delay.csv", header = T)
+
+df1 <- df[-c(1)]
+
+df1$Arr_Delay <- factor(ifelse(df1$Arr_Delay >80 ,1 ,0))
+
+indxTrain <- createDataPartition(y = df1$Arr_Delay,p = 0.7,list = FALSE)
+training <- df1[indxTrain,]
+testing <- df1[-indxTrain,]
+
+
+ctrl <- trainControl(method="cv",repeats = 5)
+nbFit <- train(Arr_Delay ~ Airport_Distance+Number_of_flights+Weather+Support_Crew_Available+Baggage_loading_time+Late_Arrival_o,
+                 data = training,
+                 method = "naive_bayes",
+                trControl = ctrl,
+                 preProcess = c("center","scale"),
+                metric="Accuracy")
+nbFit
+
+predict(nbFit, newdata = testing) -> pred_test
+confusionMatrix(pred_test, testing$Arr_Delay)
+
+varImp(nbFit, scale = FALSE) ->importance_nb
+plot(importance_nb)
+
+cat("Accuracy = ",sum(testing$Arr_Delay==pred_test)/(nrow(testing)),"\n")
+
+cat("sensitivity = Precision =  ",sensitivity(pred_test,testing$Arr_Delay),"\n")
+cat("specificity = ",specificity(pred_test,testing$Arr_Delay), "\n")
+cat("posPredValue = recall = ",posPredValue(pred_test, testing$Arr_Delay),"\n")
+cat("negPredValue = ",negPredValue(pred_test, testing$Arr_Delay),"\n")
+cat("F_measure = ",2 * ((sensitivity(pred_test,testing$Arr_Delay) *posPredValue(pred_test, testing$Arr_Delay)) / (sensitivity(pred_test,testing$Arr_Delay) + posPredValue(pred_test, testing$Arr_Delay))),"\n")
+```
+**Nhận xét thuật toán Navie bayes**
+
+
+- Độ chính xác của thuật toán Navie bayes cho tập dữ liệu là 85.89% . 
+          
+- $$Accuracy = \frac{TP + TN}{TP + TN + FP + FN} = \frac{623 + 302}{623 + 302 + 71 + 81} = 0.8589  $$
+- $$Pos_Pred_Value  = Recall = \frac{TP}{TP + FN} = \frac{623}{623 + 81} = 0.8849   $$
+- $$Neg Pred Value = \frac{TN}{TN + FP} = \frac{302}{302 + 71} = 0.8097   $$
+- $$Sensitivity = Precision = \frac{TP}{TP + FP} = \frac{623}{623 + 71} = 0.8977  $$
+- $$Specificity = \frac{TN}{TN + FN} = \frac{302}{302 + 81} = 0.7885 $$
+- $$Kappa = \frac{P_0 - P_e}{1-P_e}$$
+**Bảng giá trị**
+
+|  | Positive | Negetive | Total |  
+|:---|:--------:|:------:|:--------:| 
+| Positive | 623 | 81 | 704 |
+| Negetive | 71 | 302 | 373 | 
+| Total | 694 | 383 | 1077 |
+** **
+
+
+- $$P_0 = Accuracy = 0.8589  $$
+- $$P_e = \displaystyle\sum_{i=1}^n(\frac{n_i}{N}* \frac{m_i}{N}) = (\frac{704}{1077}* \frac{694}{1077}) + (\frac{373}{1077}* \frac{383}{1077}) = 0.5444$$
+- $$Kappa = \frac{P_0 - P_e}{1-P_e} = \frac{0.8589  - 0.5444}{1-0.5444} = 0.6903$$
+
+### Thuật toán Descision Tree
+
+```{r}
+library(caTools)
+library(class)
+library(tree)
+library(caret)
+set.seed(1000)
+
+df <- read.csv("flight_delay.csv", header = T)
+
+df1 <- df[-c(1)]
+
+df1$Arr_Delay <- factor(ifelse(df1$Arr_Delay >80 ,1 ,0))
+
+indxTrain <- createDataPartition(y = df1$Arr_Delay,p = 0.7,list = FALSE)
+#indxTrain <- sort(sample(nrow(df1), nrow(df1)*.7))
+
+training <- df1[indxTrain,]
+testing <- df1[-indxTrain,]
+tree(Arr_Delay~Airport_Distance+Number_of_flights+Weather+Support_Crew_Available+Baggage_loading_time+Late_Arrival_o, data=training) ->treeRaw
+
+plot(treeRaw)
+text(treeRaw)
+
+cv_tree<-cv.tree(treeRaw, FUN=prune.misclass)
+
+plot(cv_tree)
+
+
+```
+
+
+
+```{r}
+prune.misclass(treeRaw, best=5) -> prune_tree
+plot(prune_tree)
+text(prune_tree, pretty=0)
+
+
+predict(prune_tree, testing, type='class') -> pred_test
+confusionMatrix(pred_test, testing$Arr_Delay)
+cat("Accuracy = ",sum(testing$Arr_Delay==pred_test)/(nrow(testing)),"\n")
+cat("sensitivity = Precision =  ",sensitivity(pred_test,testing$Arr_Delay),"\n")
+cat("specificity = ",specificity(pred_test,testing$Arr_Delay), "\n")
+cat("posPredValue = recall = ",posPredValue(pred_test, testing$Arr_Delay),"\n")
+cat("negPredValue = ",negPredValue(pred_test, testing$Arr_Delay),"\n")
+cat("F_measure = ",2 * ((sensitivity(pred_test,testing$Arr_Delay) *posPredValue(pred_test, testing$Arr_Delay)) / (sensitivity(pred_test,testing$Arr_Delay) + posPredValue(pred_test, testing$Arr_Delay))),"\n")
+```
+**Nhận xét thuật toán Descision Tree **
+
+
+- Độ chính xác của thuật toán Descision Tree cho tập dữ liệu là 83.01% . 
+          
+- $$Accuracy = \frac{TP + TN}{TP + TN + FP + FN} = \frac{653 + 257}{653 + 257 + 41 + 126} = 0.8449  $$
+- $$Pos_Pred_Value  = Recall= \frac{TP}{TP + FN} = \frac{653}{653 + 126} = 0.8383  $$
+- $$Neg Pred Value = \frac{TN}{TN + FP} = \frac{257}{257 + 41} = 0.8624 $$
+- $$Sensitivity = Precision = \frac{TP}{TP + FP} = \frac{657}{657 + 41} = 0.9409 $$
+- $$Specificity = \frac{TN}{TN + FN} = \frac{257}{257 + 126} = 0.6710  $$
+- $$Kappa = \frac{P_0 - P_e}{1-P_e}$$
+**Bảng giá trị**
+
+|  | Positive | Negetive | Total |  
+|:---|:--------:|:------:|:--------:| 
+| Positive | 653 | 126 | 779 |
+| Negetive | 41 | 257 | 298 | 
+| Total | 694 | 383 | 1077 |
+** **
+
+
+- $$P_0 = Accuracy = 0.8329 $$
+- $$P_e = \displaystyle\sum_{i=1}^n(\frac{n_i}{N}* \frac{m_i}{N}) = (\frac{779}{1077}* \frac{694}{1077}) + (\frac{298}{1077}* \frac{383}{1077}) = 0.5645$$
+- $$Kappa = \frac{P_0 - P_e}{1-P_e} = \frac{0.8449 - 0.5645}{1-0.5645} = 0.644$$
+
+
+### Tóm tắt và kết luận
+
+* Du lịch bằng máy bay là một thách thức với thời gian bay đến và đi không nhất quán. Việc hoãn chuyến bay không chỉ gây tốn kém cho các hãng hàng không mà còn khiến du khách bức xúc hơn. Các yếu tố nào ảnh hưởng đến thời gian đến của chuyến bay. Do vậy mà các hãng hàng không quyết định dự và tìm ra yếu tố nào ảnh hưởng đến thời gian đến của một chuyến bay.
+
+* Tập dữ liệu gồm tổng số 3.593 quan sát và 11 biến; 10 biến là số và 1 biến là phân loại. Arr_Delay là biến phụ thuộc hoặc gọi là biến dự đoán.
+
+* Nhóm đã sử dụng các thuật toán Linear Regression, KNN (K-Nearest Neighbors), Navie bayes, Descision tree, phương pháp đánh giá là cross validation, Độ đo confusion matrix.
+
+* Kết quả dự đoán được từ những thuật toán trên là biến Number_of_flight là biến ảnh hưởng nhiều nhất đến Arr_delay. Nhóm đã hiểu được ý nghĩa của các thuật toán phân loại(classification) trong môn học.
+
+* Nếu có thêm thời gian nhóm sẽ tìm hiểu thêm các thuật toán khác về dạng phân loại như SVM. Thực hiện thuật toán trên ngôn ngữ Python
+
+* Tài liệu tham khảo:
+  https://www.analyticsvidhya.com/blog/2015/08/learning-concept-knn-algorithms-programming/ <br>
+  https://www.guru99.com/r-decision-trees.html <br>
+  Tham khảo từ sách:Applied analytics through case studies using SAS and R implementing predictive models and machine learning techniques by Gupta, Deepti (z-lib.org).pdf
+
+
+### Câu hỏi 
+* Cái output của các bạn là biến liên tục vậy tại sao bạn lại lựa chọn các thuật toán vào nhóm phân loại như là knn, naive bayes và Ủa bạn ơi cho mình hỏi là biến dự đoán là độ trễ chuyến bay vậy tại sao lại gom phân loại và hồi quy tuyến tính vào chung 1 bài.
+* Nhóm mình sử dụng 2 dạng thuật toán một là dạng hồi quy, hai là dạng phân loại.Dạng thứ nhất thì dạng hồi quy nhóm mình có trình bày Linear Regression và Lasso Regression để tìm ra yếu tố ảnh hưởng đến thời gian bay đến của chuyến bay và dự đoán thời gian bay đến bị trễ.Dạng thứ hai là dạng thuật toán phân loại như KNN, Navies bayes, Descision tree, thì nhóm mình muốn thử xem như bài toán hồi quy thì có cách nào để thực hiện ở dạng phân loại hay không? Từ đó, nhóm mình quyết định làm thuật toán này để hiểu rõ hơn cách hoạt động của các thuật toán, để thực hiện thì nhóm mình đã đưa biến giải thích(biến dự đoán) về dạng nhị phân(0 và  1) thì và từ đó mình xây dựng mô hình các thuật toán và xem xét thuật toán nào có cho kết quả tốt nhất thông qua 2 hệ số đánh giá (Accuracy và Kappa). 
+* Làm sao biết được con số đó là chuẩn để đưa về biến dummy?
+* Thì ở đây biến giải thích của nhóm mình (Arr_delay) có min = 0, Q1 = 49, median = 70, mean = 69.8 , Q3 = 90, max = 180 thì nhóm mình chọn giá trị là 80 vì nó nằm trong khoảng cho phép Q1 <= Gt <= Q3 <=> 49 <= 80 <= 90. Nếu chọn giá trị nằm ngoài khoảng này thì giá trị không đúng vì những giá trị đó là giá trị ngoài rìa.
+
+
+
+
+
+
+
